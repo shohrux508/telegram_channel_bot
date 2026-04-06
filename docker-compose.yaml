@@ -62,6 +62,28 @@ services:
       timeout: 3s
       retries: 3
 
+  # ── Bot App — Основное приложение ─────────────────────────────────────
+  bot:
+    build: .
+    container_name: template-bot
+    depends_on:
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - MQTT_HOST=mqtt
+      - QDRANT_URL=http://qdrant:6333
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+
 volumes:
   redis_data:
   mqtt_data:

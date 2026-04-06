@@ -51,16 +51,17 @@ install-playwright: ## Установить браузеры для Playwright
 # ── Docker ───────────────────────────────────────────────────────────────
 
 .PHONY: up
-up: ## Поднять инфраструктуру (Redis, MQTT, Qdrant)
-	docker compose up -d
+up: ## Поднять всё (Bot + Инфраструктура)
+	docker compose up -d --build
 
 .PHONY: down
-down: ## Остановить инфраструктуру
+down: ## Остановить и удалить контейнеры
 	docker compose down
 
 .PHONY: logs
-logs: ## Посмотреть логи инфраструктуры
+logs: ## Посмотреть логи всех сервисов
 	docker compose logs -f
+
 
 .PHONY: status
 status: ## Статус контейнеров

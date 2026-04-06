@@ -17,7 +17,8 @@ class Settings(BaseSettings):
 
     # ── API ──────────────────────────────────────────────────────────────
     API_HOST: str = "0.0.0.0"
-    API_PORT: int = 8000
+    API_PORT: int = Field(default=8000, alias="PORT", validation_alias="PORT")
+
 
     # ── AI / LLM ─────────────────────────────────────────────────────────
     LLM_PROVIDER: str = "openai"        # openai | anthropic
