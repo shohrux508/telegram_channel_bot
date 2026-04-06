@@ -264,6 +264,54 @@ class AnalysisService:
             threshold=threshold,
         )
 
+    # ── Manifesto Publisher Analytics ────────────────────────────────────
+
+    async def get_manifesto_conversion(self, short_code: str, container: Any) -> dict:
+        """Посчитать конверсию и монетизацию для конкретного манифеста.
+        
+        Формула конверсии: (покупатели / просмотры) * 100% (если платный).
+        Для бесплатного: можно считать ARPU (Average Revenue Per User) от донатов.
+        
+        Возвращает: Dict со статистикой.
+        """
+        manifesto_svc = container.manifesto
+        collection = await manifesto_svc.get_collection(short_code)
+        
+        if not collection:
+            return {"error": "Manifesto not found"}
+            
+        views = collection.views_count
+        revenue = collection.total_earned
+        is_paid = collection.is_paid
+        price = collection.price
+        
+        buyers_count = 0
+        if is_paid and price > 0:
+            # Для платного можно посчитать количество покупателей через revenue / price
+            # Либо брать размер сета access_key (через Redis), но для простоты: 
+            # (чтобы не лезть в приватные поля сервиса извне)
+            buyers_count = revenue // price
+            
+        conversion_rate = 0.0
+        if views > 0:
+            if is_paid:
+                conversion_rate = (buyers_count / views) * 100
+            else:
+                # Нет четкой конверсии, но можно показать вовлеченность 
+                # (предполагаем $1 = 1 XTR, тогда это ~ARPU)
+                conversion_rate = revenue / views
+                
+        return {
+            "short_code": short_code,
+            "type": "Paid" if is_paid else "Free",
+            "price": price,
+            "views": views,
+            "revenue_xtr": revenue,
+            "buyers": buyers_count if is_paid else None,
+            "metric_name": "Conversion (%)" if is_paid else "ARPU (XTR/view)",
+            "metric_value": round(conversion_rate, 2)
+        }
+
     # ── Приватные хелперы ────────────────────────────────────────────────
 
     def _build_summary(self, df: Any) -> MetricsSummary:

@@ -95,8 +95,8 @@ class TestCreateCollection:
     @pytest.mark.asyncio
     async def test_creates_collection_with_code(self, service: ManifestoService):
         """Создание коллекции возвращает short_code."""
-        file_ids = ["photo_1", "photo_2", "photo_3"]
-        code = await service.create_collection(file_ids)
+        media = [{"type": "photo", "content": "photo_1"}]
+        code = await service.create_collection(media)
 
         assert code is not None
         assert len(code) > 0
@@ -104,8 +104,8 @@ class TestCreateCollection:
     @pytest.mark.asyncio
     async def test_collection_stored_in_cache(self, service: ManifestoService, mock_cache):
         """Коллекция сохраняется в кэш."""
-        file_ids = ["photo_1", "photo_2"]
-        code = await service.create_collection(file_ids)
+        media = [{"type": "photo", "content": "photo_1"}]
+        code = await service.create_collection(media)
 
         # Проверяем, что set_json был вызван
         key = f"manifesto:{code}"
@@ -114,12 +114,12 @@ class TestCreateCollection:
         # Проверяем содержимое
         stored = json.loads(mock_cache._store[key])
         assert stored["short_code"] == code
-        assert stored["file_ids"] == file_ids
+        assert stored["media"] == media
 
     @pytest.mark.asyncio
     async def test_collection_added_to_index(self, service: ManifestoService, mock_cache):
         """Коллекция добавляется в индекс."""
-        code = await service.create_collection(["photo_1"])
+        code = await service.create_collection([{"type": "photo", "content": "photo_1"}])
 
         index = mock_cache._hashes.get("manifesto:index", {})
         assert code in index
@@ -129,7 +129,7 @@ class TestCreateCollection:
         """Каждый вызов генерирует уникальный код."""
         codes = set()
         for _ in range(5):
-            code = await service.create_collection(["photo"])
+            code = await service.create_collection([{"type": "photo", "content": "photo"}])
             codes.add(code)
 
         assert len(codes) == 5
@@ -142,13 +142,14 @@ class TestGetCollection:
     @pytest.mark.asyncio
     async def test_get_existing_collection(self, service: ManifestoService):
         """Получение существующей коллекции."""
-        file_ids = ["photo_1", "photo_2"]
-        code = await service.create_collection(file_ids)
+        media = [{"type": "photo", "content": "photo_1"}]
+        code = await service.create_collection(media)
 
         result = await service.get_collection(code)
         assert result is not None
         assert result.short_code == code
-        assert result.file_ids == file_ids
+        assert len(result.media) == 1
+        assert result.media[0].content == "photo_1"
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_collection(self, service: ManifestoService):
@@ -164,7 +165,7 @@ class TestLogView:
     @pytest.mark.asyncio
     async def test_increments_view_count(self, service: ManifestoService):
         """log_view инкрементирует счётчик."""
-        code = await service.create_collection(["photo"])
+        code = await service.create_collection([{"type": "photo", "content": "photo"}])
 
         views = await service.log_view(code, user_id=123, full_name="Test User")
         assert views == 1
@@ -175,7 +176,7 @@ class TestLogView:
     @pytest.mark.asyncio
     async def test_saves_user_on_view(self, service: ManifestoService, mock_cache):
         """log_view сохраняет информацию о пользователе."""
-        code = await service.create_collection(["photo"])
+        code = await service.create_collection([{"type": "photo", "content": "photo"}])
 
         await service.log_view(
             code,
@@ -199,7 +200,7 @@ class TestUsers:
     @pytest.mark.asyncio
     async def test_get_all_users(self, service: ManifestoService):
         """Получение списка всех пользователей."""
-        code = await service.create_collection(["photo"])
+        code = await service.create_collection([{"type": "photo", "content": "photo"}])
 
         await service.log_view(code, user_id=1, full_name="User 1")
         await service.log_view(code, user_id=2, full_name="User 2")
@@ -225,18 +226,20 @@ class TestListAll:
     @pytest.mark.asyncio
     async def test_list_all_with_data(self, service: ManifestoService):
         """list_all возвращает все манифесты."""
-        await service.create_collection(["p1", "p2"])
-        await service.create_collection(["p3"])
+        await service.create_collection([{"type": "photo", "content": "p1"}])
+        await service.create_collection([])
 
         result = await service.list_all()
         assert len(result) == 2
 
         # Проверяем структуру
         row = result[0]
-        assert "Код" in row
-        assert "Фото" in row
-        assert "Просмотры" in row
-        assert "Создан" in row
+        assert "Code" in row
+        assert "Type" in row
+        assert "Price (XTR)" in row
+        assert "Items" in row
+        assert "Views" in row
+        assert "Revenue (XTR)" in row
 
     @pytest.mark.asyncio
     async def test_list_all_empty(self, service: ManifestoService):

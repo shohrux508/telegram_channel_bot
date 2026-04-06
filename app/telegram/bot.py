@@ -15,6 +15,9 @@ async def start_telegram(container: Container):
     dp["container"] = container
 
     # Include routers — порядок важен!
+    # 0. Платежи (Stars)
+    from app.telegram.routers import payments
+    dp.include_router(payments.router)
     # 1. Админский роутер (перехватит /manifesto, /users)
     dp.include_router(admin_manifesto.router)
     # 2. User deep link (/start с аргументом)
