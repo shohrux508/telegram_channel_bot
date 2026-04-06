@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
     REDIS_KEY_PREFIX: str = ""
+    REDIS_PUB_URL: str | None = None  # Railway public Redis URL
+
+    # ── Manifesto Publisher ───────────────────────────────────────────────
+    MANIFESTO_ADMIN_ID: int = 0       # Telegram ID администратора
+    MANIFESTO_CODE_LENGTH: int = 8    # Длина генерируемого short_code
 
     # ── HTTP ─────────────────────────────────────────────────────────────
     HTTP_TIMEOUT: float = 30.0

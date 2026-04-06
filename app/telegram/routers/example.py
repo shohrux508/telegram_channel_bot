@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 router = Router()
 
-@router.message(CommandStart())
+@router.message(CommandStart(deep_link=False))
 async def cmd_start(message: types.Message, container: Container):
     example_service: "ExampleService" = container.get("example_service")
     msg = example_service.get_message()

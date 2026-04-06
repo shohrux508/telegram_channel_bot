@@ -150,6 +150,19 @@ class App:
     @staticmethod
     def _make_cache():
         from libs.utils.cache import CacheService, CacheConfig
+
+        # Если задан REDIS_PUB_URL (Railway) — парсим из него
+        if settings.REDIS_PUB_URL:
+            from urllib.parse import urlparse
+            parsed = urlparse(settings.REDIS_PUB_URL)
+            return CacheService(CacheConfig(
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 6379,
+                db=0,
+                password=parsed.password,
+                key_prefix=settings.REDIS_KEY_PREFIX,
+            ))
+
         return CacheService(CacheConfig(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
@@ -163,6 +176,13 @@ class App:
     def setup_services(self) -> None:
         logger.info("Настройка бизнес-сервисов…")
         self.container.register("example_service", ExampleService())
+
+        # Manifesto Publisher
+        from app.services.manifesto_service import ManifestoService
+        self.container.register_lazy(
+            "manifesto",
+            lambda: ManifestoService(cache=self.container.cache),
+        )
 
     # ── Запуск подсистем ─────────────────────────────────────────────────
 
@@ -196,10 +216,27 @@ class App:
 
     # ── Главный цикл ─────────────────────────────────────────────────────
 
+    async def _show_manifesto_table(self) -> None:
+        """Вывод таблицы активных манифестов при запуске."""
+        try:
+            manifesto_svc = self.container.manifesto
+            collections = await manifesto_svc.list_all()
+            console = self.container.console
+            if collections:
+                console.header("📋 Активные манифесты")
+                console.table(collections, title="Manifesto Collections")
+            else:
+                console.info("Манифестов пока нет")
+        except Exception as e:
+            logger.debug("Не удалось показать таблицу манифестов: {}", e)
+
     async def run(self) -> None:
         self.setup_logging()
         self.setup_libs()
         self.setup_services()
+
+        # Показать таблицу манифестов при старте
+        await self._show_manifesto_table()
 
         loop = asyncio.get_running_loop()
         self._install_signal_handlers(loop)

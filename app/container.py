@@ -121,3 +121,8 @@ class Container:
     def parser(self) -> Any:
         """libs.crawler.parser.ParserService"""
         return self.get("parser")
+
+    @property
+    def manifesto(self) -> Any:
+        """app.services.manifesto_service.ManifestoService"""
+        return self.get("manifesto")
