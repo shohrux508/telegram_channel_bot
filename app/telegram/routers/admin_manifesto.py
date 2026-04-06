@@ -12,7 +12,7 @@ FSM:
 from __future__ import annotations
 
 from aiogram import Router, types, F
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
@@ -20,6 +20,8 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
+from aiogram.utils.markdown import hbold, hcode, hlink
+import html
 from loguru import logger
 from typing import Any
 
@@ -37,6 +39,19 @@ def _is_admin(event: types.Message | CallbackQuery) -> bool:
     """Проверяет, что событие от администратора."""
     user = event.from_user
     return user is not None and user.id == settings.MANIFESTO_ADMIN_ID
+
+
+@router.message(CommandStart(), _is_admin)
+async def cmd_start_admin(message: types.Message):
+    """Вывод списка доступных команд для администратора."""
+    commands = [
+        f"👋 {hbold('Привет, Админ!')}\n",
+        "Доступные команды:",
+        "🚀 /manifesto — создать новый манифест (загрузить медиа)",
+        "👥 /users — посмотреть список всех пользователей",
+        "❓ /start — показать это сообщение",
+    ]
+    await message.answer("\n".join(commands), parse_mode="HTML")
 
 
 # ── FSM States ───────────────────────────────────────────────────────────
@@ -196,10 +211,6 @@ async def _finalize_manifesto(chat_id: int, bot: Any, state: FSMContext, contain
     logger.info("Манифест создан: code={}, media={}, price={}", short_code, len(media_list), price)
 
 # ── /users — список пользователей ────────────────────────────────────────
-
-
-import html
-from aiogram.utils.markdown import hbold, hcode, hlink
 
 
 @router.message(Command("users"), _is_admin)
