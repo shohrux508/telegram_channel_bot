@@ -12,4 +12,4 @@ router = Router()
 async def cmd_start(message: types.Message, container: Container):
     example_service: "ExampleService" = container.get("example_service")
     msg = example_service.get_message()
-    await message.answer(f"Bot says: {msg}")
+    await message.answer(f"Bot says: 'Assolomu alaykum!'")
