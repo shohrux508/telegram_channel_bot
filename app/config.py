@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str | None = None
     REDIS_KEY_PREFIX: str = ""
     REDIS_PUB_URL: str | None = None  # Railway public Redis URL
+    REDIS_URL: str | None = None      # Railway internal/Standard Redis URL
 
     # ── Manifesto Publisher ───────────────────────────────────────────────
     MANIFESTO_ADMIN_ID: int = 0       # Telegram ID администратора

@@ -151,19 +151,11 @@ class App:
     def _make_cache():
         from libs.utils.cache import CacheService, CacheConfig
 
-        # Если задан REDIS_PUB_URL (Railway) — парсим из него
-        if settings.REDIS_PUB_URL:
-            from urllib.parse import urlparse
-            parsed = urlparse(settings.REDIS_PUB_URL)
-            return CacheService(CacheConfig(
-                host=parsed.hostname or "localhost",
-                port=parsed.port or 6379,
-                db=0,
-                password=parsed.password,
-                key_prefix=settings.REDIS_KEY_PREFIX,
-            ))
+        # Выбираем лучший доступный URL
+        redis_url = settings.REDIS_URL or settings.REDIS_PUB_URL
 
         return CacheService(CacheConfig(
+            url=redis_url,
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
             db=settings.REDIS_DB,

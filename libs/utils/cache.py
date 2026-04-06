@@ -26,6 +26,7 @@ class CacheConfig(BaseModel):
     port: int = Field(default=6379, gt=0, le=65535)
     db: int = Field(default=0, ge=0)
     password: str | None = None
+    url: str | None = None  # Full connection URL (redis://...)
     decode_responses: bool = True
     socket_timeout: float = Field(default=5.0, gt=0)
     max_connections: int = Field(default=10, gt=0)
@@ -50,6 +51,25 @@ class CacheService:
             return self._redis
 
         from redis.asyncio import Redis, ConnectionPool
+
+        if self.config.url:
+            masked_url = self.config.url
+            if "@" in masked_url and ":" in masked_url.split("@")[0]:
+                parts = masked_url.split("@")
+                scheme_auth = parts[0]
+                if ":" in scheme_auth:
+                    scheme, auth = scheme_auth.split("://")
+                    if ":" in auth:
+                        user, _ = auth.split(":")
+                        masked_url = f"{scheme}://{user}:****@{parts[1]}"
+            logger.debug("Инициализация Redis через URL: {}", masked_url)
+            self._redis = Redis.from_url(
+                self.config.url,
+                decode_responses=self.config.decode_responses,
+                socket_timeout=self.config.socket_timeout,
+                max_connections=self.config.max_connections,
+            )
+            return self._redis
 
         pool = ConnectionPool(
             host=self.config.host,
